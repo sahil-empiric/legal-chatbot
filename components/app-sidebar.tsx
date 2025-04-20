@@ -6,11 +6,11 @@ import {
     SidebarGroup,
     SidebarHeader,
 } from "@/components/ui/sidebar"
-import { LayoutDashboard, FileText, Settings, LogOut, Menu, X } from "lucide-react"
+import { createBrowserClient } from "@/lib/supabase/client"
+import { FileText, LayoutDashboard, LogOut, Settings } from "lucide-react"
 import Link from "next/link"
-import { Button } from "./ui/button"
-import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation"
+import { Button } from "./ui/button"
 
 const navItems = [
     {
@@ -30,9 +30,7 @@ const navItems = [
     },
 ];
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createBrowserClient();
 
 export function AppSidebar() {
     const router = useRouter()

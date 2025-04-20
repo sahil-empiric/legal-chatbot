@@ -1,15 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { createClient } from "@supabase/supabase-js"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { createBrowserClient } from "@/lib/supabase/client"
 import { FileIcon, UploadIcon, UsersIcon } from "lucide-react"
+import { useEffect, useState } from "react"
 
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createBrowserClient();
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({

@@ -1,19 +1,16 @@
 "use client"
 
-import type React from "react"
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import type React from "react"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@supabase/supabase-js"
+import { createBrowserClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
-import DashboardSidebar from "@/components/dashboard-sidebar"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createBrowserClient();
 
 export default function DashboardLayout({
   children,

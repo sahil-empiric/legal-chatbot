@@ -2,20 +2,18 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
-import { createClient } from "@supabase/supabase-js"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { createBrowserClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
 
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createBrowserClient();
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false)

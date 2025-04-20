@@ -1,9 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import axios from "axios";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,7 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { createBrowserClient } from "@/lib/supabase/client";
+import axios from "axios";
 import {
   Download,
   FileIcon,
@@ -22,21 +29,12 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { useEffect, useState } from "react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createBrowserClient();
 const mistralApiKey = process.env.NEXT_PUBLIC_MISTRAL_API_KEY;
 
 const mistralAPI = axios.create({
@@ -148,9 +146,9 @@ export default function FilesPage() {
 
       if (data) {
         const { data: vectorData, error: vectorError } = await supabase
-          .from("document_vectors")
-          .select("filename")
-          .eq("user_id", user.id);
+          .from("documents")
+          .select("file_name")
+          .eq("file_type", "kb");
 
         if (vectorError) {
           console.error("Error fetching vector data:", vectorError);
@@ -198,20 +196,22 @@ export default function FilesPage() {
       setUploading(true);
       setError(null);
 
-      const fileName = `${Date.now()}-${selectedFile.name}`;
+      const fileName = `kb/${Date.now()}-${selectedFile.name}`;
       const { data, error } = await supabase.storage
         .from("files")
         .upload(fileName, selectedFile);
 
       if (error) throw error;
 
-      if (selectedFile.type === "application/pdf") {
-        await extractPdfText(fileName, selectedFile);
-      } else {
-        setSelectedFile(null);
-      }
+      console.log('upload data', data);
 
-      fetchFiles();
+      // if (selectedFile.type === "application/pdf") {
+      //   await extractPdfText(fileName, selectedFile);
+      // } else {
+      //   setSelectedFile(null);
+      // }
+
+      // fetchFiles();
     } catch (error: any) {
       setError(error.message || "Failed to upload file");
     } finally {

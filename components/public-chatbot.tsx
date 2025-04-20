@@ -1,20 +1,18 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { createClient } from "@supabase/supabase-js"
-import axios from "axios"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { SendIcon, Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { createBrowserClient } from "@/lib/supabase/client"
+import axios from "axios"
+import { Loader2, SendIcon } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createBrowserClient();
 const mistralApiKey = process.env.NEXT_PUBLIC_MISTRAL_API_KEY!
 
 // Initialize Mistral API client

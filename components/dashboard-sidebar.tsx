@@ -1,16 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { createBrowserClient } from "@/lib/supabase/client"
+import { FileText, LayoutDashboard, LogOut, Menu, Settings, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { createClient } from "@supabase/supabase-js"
-import { Button } from "@/components/ui/button"
-import { LayoutDashboard, FileText, Settings, LogOut, Menu, X } from "lucide-react"
+import { useState } from "react"
 
 // Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createBrowserClient();
 
 export default function DashboardSidebar() {
   const pathname = usePathname()
