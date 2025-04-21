@@ -141,26 +141,18 @@ export default function FilesPage() {
         throw new Error("Authentication required: " + (userError?.message || "User not found"));
       }
 
-      const { data, error } = await supabase.storage.from("files").list();
+      const { data, error } = await supabase.storage.from("files").list('kb');
       if (error) throw error;
 
       if (data) {
-        const { data: vectorData, error: vectorError } = await supabase
-          .from("documents")
-          .select("file_name")
-          .eq("file_type", "kb");
 
-        if (vectorError) {
-          console.error("Error fetching vector data:", vectorError);
-        }
-
-        const vectorizedFilenames = vectorData?.map((item: any) => item.filename) || [];
+        const vectorizedFilenames = data?.map((item: any) => item.name) || [];
 
         // Use throttled batch processing for URL generation
         const generateFileWithUrl = async (file: any) => {
-          const { data: urlData } = await supabase.storage
+          const { data: urlData, error } = await supabase.storage
             .from("files")
-            .createSignedUrl(file.name, 3600);
+            .createSignedUrl(`kb/${file.name}`, 3600);
 
           return {
             id: file.id,
@@ -205,13 +197,6 @@ export default function FilesPage() {
 
       console.log('upload data', data);
 
-      // if (selectedFile.type === "application/pdf") {
-      //   await extractPdfText(fileName, selectedFile);
-      // } else {
-      //   setSelectedFile(null);
-      // }
-
-      // fetchFiles();
     } catch (error: any) {
       setError(error.message || "Failed to upload file");
     } finally {
@@ -219,54 +204,6 @@ export default function FilesPage() {
     }
   };
 
-  const extractPdfText = async (fileName: string, file: File) => {
-    try {
-      setProcessing(true);
-      setProcessingStatus("Extracting text from PDF...");
-
-      const formData = new FormData();
-      formData.append("pdf", file);
-
-      const response = await axios.post("/api/extract-pdf", formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      const extractedData = response.data;
-      setExtractedPdfData({
-        pages: extractedData.pages,
-        metadata: extractedData.metadata,
-      });
-
-      setProcessingStatus("PDF text extracted successfully!");
-
-      // Split pages into smaller batches to avoid rate limiting
-      const pageChunks = [];
-      for (let i = 0; i < extractedData.pages.length; i += 5) {
-        pageChunks.push(extractedData.pages.slice(i, i + 5));
-      }
-
-      for (let i = 0; i < pageChunks.length; i++) {
-        setProcessingStatus(`Processing page chunk ${i + 1}/${pageChunks.length}...`);
-        await generateEmbeddingsForChunk(fileName, pageChunks[i], i * 5);
-        // Add delay between chunks to avoid rate limiting
-        if (i < pageChunks.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      }
-
-      fetchFiles();
-
-      setProcessingStatus("All embeddings generated successfully!");
-      setTimeout(() => {
-        setProcessingStatus(null);
-      }, 3000);
-    } catch (error: any) {
-      setError(`PDF text extraction failed: ${error.response?.data?.message || error.message}`);
-    } finally {
-      setProcessing(false);
-      setSelectedFile(null);
-    }
-  };
 
   const generateEmbeddingsForChunk = async (
     fileName: string,
@@ -410,24 +347,20 @@ export default function FilesPage() {
       setError(null);
       setRagAnswer(null);
 
-      // 1. Get embedding for search query
-      const embeddingResponse = await mistralAPI.post("/embeddings", {
-        model: "mistral-embed",
-        input: [searchQuery]
-      });
+      // 1. Call the API to get embedding for search query
+      const embeddingResponse = await axios.post(
+        "https://dhvvdsnipzvahdienvsm.supabase.co/functions/v1/queryEmbed",
+        {
+          query: searchQuery,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      const queryEmbedding = embeddingResponse.data.data[0].embedding;
-
-      // 2. Search documents with the embedding
-      const { data, error } = await supabase.rpc("search_document_vectors", {
-        query_embedding: queryEmbedding,
-        match_count: 5,
-        similarity_threshold: 0.7,
-      });
-
-      if (error) throw error;
-
-      const searchResults: SearchResult[] = data || [];
+      const searchResults: SearchResult[] = embeddingResponse.data || [];
 
       // 3. Generate answer using RAG
       if (searchResults.length > 0) {

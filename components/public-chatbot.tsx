@@ -80,26 +80,19 @@ export default function PublicChatbot() {
   const searchDocuments = async (query: string) => {
     try {
       // Get embedding for search query
-      const embeddingResponse = await mistralAPI.post("/embeddings", {
-        model: "mistral-embed",
-        input: [query]
-      })
+      const embeddingResponse = await axios.post(
+        "https://dhvvdsnipzvahdienvsm.supabase.co/functions/v1/queryEmbed",
+        {
+          query: query,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      const queryEmbedding = embeddingResponse.data.data[0].embedding
-      console.log("🚀 ~ searchDocuments ~ queryEmbedding:", queryEmbedding)
-
-      // Search documents with the embedding
-      const { data, error } = await supabase.rpc("search_document_vectors", {
-        query_embedding: queryEmbedding,
-        match_count: 5,
-        similarity_threshold: 0.7,
-      })
-      console.log("🚀 ~ searchDocuments ~ error:", error)
-      console.log("🚀 ~ searchDocuments ~ data:", data)
-
-      if (error) throw error
-
-      return data as SearchResult[]
+      return embeddingResponse.data as SearchResult[]
     } catch (error: any) {
       console.error("Search error:", error)
       throw error
