@@ -310,31 +310,35 @@ export default function FilesPage() {
   const deleteFile = async () => {
     if (!fileToDelete) return;
 
+    // 1️⃣ Build the full path
+    const objectPath = `kb/${fileToDelete}`;
+
     try {
       setError(null);
 
-      const { error: storageError } = await supabase.storage
+      // 2️⃣ Remove from Storage
+      const { error: storageError } = await supabase
+        .storage
         .from("files")
-        .remove([fileToDelete]);
-
+        .remove([objectPath]);                       // ← use full path
       if (storageError) throw storageError;
 
+      // 3️⃣ Remove from your document_vectors table
       const { error: vectorError } = await supabase
         .from("document_vectors")
         .delete()
-        .match({ filename: fileToDelete });
+        .eq("filename", objectPath);                 // ← match full path
+      if (vectorError) console.error("Vector delete error:", vectorError);
 
-      if (vectorError) {
-        console.error("Error deleting vector data:", vectorError);
-      }
-
-      setFiles(files.filter((file) => file.name !== fileToDelete));
+      // 4️⃣ Update UI state
+      setFiles(prev => prev.filter(f => f.name !== fileToDelete));
       setDeleteDialogOpen(false);
       setFileToDelete(null);
     } catch (error: any) {
       setError(error.message || "Failed to delete file");
     }
   };
+
 
   const searchAndGenerateAnswer = async () => {
     if (!searchQuery) {
