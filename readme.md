@@ -6,13 +6,27 @@ CREATE POLICY "Users can modify files 1m0cqf_0" ON storage.objects FOR INSERT TO
 CREATE POLICY "Users can modify files 1m0cqf_1" ON storage.objects FOR SELECT TO public USING (bucket_id = 'files'); -- Policy for select
 ```
 
+### Create a cases table
+```sql
+CREATE TABLE public.cases (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    title TEXT NOT NULL,
+    created_by uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+) WITH (OIDS=FALSE);
+
+-- Create an index on the created_by column for better performance on joins
+CREATE INDEX idx_cases_created_by ON public.cases(created_by);
+```
+
 ### Create a documents table
 ```sql
 CREATE TYPE file_type_enum AS ENUM ('kb', 'user_kb');
 
 CREATE TABLE public.documents (
     id bigint primary key generated always as identity,
-    file_reference uuid not null references storage.objects (id) on delete cascade,
+    case_id BIGINT not null references public.cases (id) ON DELETE CASCADE,
+    file_reference uuid not null references storage.objects (id) ON DELETE CASCADE,
     file_type file_type_enum default 'user_kb' NOT NULL,
     created_at timestamp with time zone DEFAULT now()
 ) WITH (OIDS=FALSE);
@@ -31,6 +45,7 @@ DECLARE
     file_type file_type_enum;  -- will hold either 'kb' or 'user_kb'
     document_id bigint;
     result int;
+    file_metadata jsonb;  -- variable to hold the metadata
 BEGIN
     -- 1. Extract the first segment of NEW.name and decide the file_type
     IF split_part(NEW.name, '/', 1) = 'kb' THEN
@@ -39,18 +54,23 @@ BEGIN
         file_type := 'user_kb'::file_type_enum;
     END IF;
 
-    -- 2. Insert into documents using the computed file_type
+    -- 2. Get the metadata from the NEW object
+    file_metadata := NEW.metadata;
+
+    -- 3. Insert into documents using the computed file_type
     INSERT INTO public.documents (
+        case_id,
         file_reference,
         file_type
     )
     VALUES (
+        (file_metadata ->> 'case_id')::bigint,
         NEW.id,
         file_type
     ) 
     returning id into document_id;
 
-    -- 3. Process Documents
+    -- 4. Process Documents
     select
         net.http_post(
             -- url := supabase_url() || '/functions/v1/processDocuments',

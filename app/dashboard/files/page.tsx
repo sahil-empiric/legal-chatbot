@@ -191,7 +191,11 @@ export default function FilesPage() {
       const fileName = `kb/${Date.now()}-${selectedFile.name}`;
       const { data, error } = await supabase.storage
         .from("files")
-        .upload(fileName, selectedFile);
+        .upload(fileName, selectedFile, {
+          metadata: {
+            case_id: 1,
+          }
+        });
 
       if (error) throw error;
 
