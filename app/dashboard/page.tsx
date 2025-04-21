@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FileIcon, UploadIcon, UsersIcon } from "lucide-react"
+import Link from "next/link"
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -114,30 +115,36 @@ export default function DashboardPage() {
               <CardDescription>Common tasks you can perform from the dashboard</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-base">Upload Files</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <p className="text-sm text-muted-foreground">Upload new files to your storage</p>
-                </CardContent>
-              </Card>
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-base">Manage Files</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <p className="text-sm text-muted-foreground">View and manage your uploaded files</p>
-                </CardContent>
-              </Card>
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-base">Account Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <p className="text-sm text-muted-foreground">Update your account preferences</p>
-                </CardContent>
-              </Card>
+              <Link href='/dashboard/files'>
+                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-base">Upload Files</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <p className="text-sm text-muted-foreground">Upload new files to your storage</p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href='/dashboard/files'>
+                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-base">Manage Files</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <p className="text-sm text-muted-foreground">View and manage your uploaded files</p>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href='/dashboard/settings'>
+                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-base">Account Settings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <p className="text-sm text-muted-foreground">Update your account preferences</p>
+                  </CardContent>
+                </Card>
+              </Link>
             </CardContent>
           </Card>
         </TabsContent>

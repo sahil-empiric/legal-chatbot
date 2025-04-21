@@ -236,6 +236,7 @@ export default function PublicChatbot() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
+            autoFocus
           />
           <Button type="submit" size="icon" disabled={loading || !input.trim()}>
             <SendIcon className="h-4 w-4" />
