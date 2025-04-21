@@ -54,12 +54,13 @@ interface SearchResult {
   similarity: number
 }
 
+const systemMessage = {
+  role: "system",
+  content: "You are an expert assistant for a file management system. Use the provided context to answer the user's question as accurately as possible. Format your responses using Markdown."
+}
+
 export default function PublicChatbot() {
   const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "system",
-      content: "You are an expert assistant for a file management system. Use the provided context to answer the user's question as accurately as possible. Format your responses using Markdown."
-    },
     {
       role: "assistant",
       content: "Hello! How can I help you today? You can ask me questions about your files or search for specific information within them.",
@@ -88,17 +89,12 @@ export default function PublicChatbot() {
       })
 
       const queryEmbedding = embeddingResponse.data.data[0].embedding
-      console.log("🚀 ~ searchDocuments ~ queryEmbedding:", queryEmbedding)
-
       // Search documents with the embedding
       const { data, error } = await supabase.rpc("search_document_vectors", {
         query_embedding: queryEmbedding,
         match_count: 5,
         similarity_threshold: 0.7,
       })
-      console.log("🚀 ~ searchDocuments ~ error:", error)
-      console.log("🚀 ~ searchDocuments ~ data:", data)
-
       if (error) throw error
 
       return data as SearchResult[]
@@ -124,28 +120,22 @@ export default function PublicChatbot() {
     try {
       // Search for relevant documents
       const searchResults = await searchDocuments(userMessage)
-      console.log("🚀 ~ handleSubmit ~ searchResults:", searchResults)
-
       // Build context from search results
       let context = ""
       if (searchResults && searchResults.length > 0) {
         context = searchResults.map(r => `From ${r.filename}: ${r.content}`).join("\n\n")
-        console.log("🚀 ~ handleSubmit ~ context:", context)
       } else {
         const { data: files } = await supabase.storage.from("files").list()
         const fileNames = files?.map(file => file.name).join(", ") || "No files available"
         context = `No relevant documents found. Available files: ${fileNames}`
-        console.log("🚀 ~ handleSubmit ~ context:", context)
       }
 
       // Prepare messages for chat API
       const chatMessages = [
-        messages[0], // System message
-        ...messages.slice(1).filter(msg => msg.role !== "system"), // Previous conversation
+        systemMessage, // System message
+        ...messages, // Previous conversation
         { role: "user", content: `Context:\n${context}\n\nQuestion: ${userMessage}` }
       ]
-      console.log("🚀 ~ handleSubmit ~ chatMessages:", chatMessages)
-
       // Generate AI response
       const completionResponse = await mistralAPI.post("/chat/completions", {
         model: "mistral-small",
@@ -153,12 +143,16 @@ export default function PublicChatbot() {
         max_tokens: 512,
         temperature: 0.2,
       })
-      console.log("🚀 ~ handleSubmit ~ completionResponse:", completionResponse)
-
       const answer = completionResponse.data.choices[0]?.message?.content || "No answer generated."
 
       // Add AI response to chat
-      setMessages((prev) => [...prev, { role: "assistant", content: answer }])
+      setMessages((prev) => {
+        const updatedMessages: Message[] = [...prev, { role: "assistant", content: answer }];
+        if (updatedMessages.length > 11) {
+          return [...updatedMessages.slice(2)];
+        }
+        return updatedMessages;
+      });
     } catch (error: any) {
       console.error("Error generating response:", error)
       setError(error.message || "Failed to generate response")
@@ -184,11 +178,12 @@ export default function PublicChatbot() {
                 <Avatar className="h-8 w-8">
                   {message.role === "assistant" ? (
                     <>
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                      <AvatarImage src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTz5uMnIudmvgyCgU7-dociht4oBz1sklU_U3F7H2L7JHsXAYcQzAhJjT2deJAzdVcM2Ig&usqp=CAU" />
                       <AvatarFallback>AI</AvatarFallback>
                     </>
                   ) : (
                     <>
+                      <AvatarImage src="https://github.com/shadcn.png" />
                       <AvatarFallback>You</AvatarFallback>
                     </>
                   )}
