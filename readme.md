@@ -154,3 +154,23 @@ referencing new TABLE AS inserted
 FOR each STATEMENT
 EXECUTE PROCEDURE public.embed_content_function(content, embedding, 5);
 ```
+
+### Create function for vector search
+```sql
+create or replace function public.match_document_sections(
+  embedding vector(384),
+  match_threshold float
+)
+returns setof document_sections
+language plpgsql
+as $$
+#variable_conflict use_variable
+begin
+  return query
+  select *
+  from document_sections
+  where document_sections.embedding <#> embedding < -match_threshold
+	order by document_sections.embedding <#> embedding;
+end;
+$$;
+```
