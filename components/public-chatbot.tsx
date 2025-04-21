@@ -175,11 +175,12 @@ export default function PublicChatbot() {
                 <Avatar className="h-8 w-8">
                   {message.role === "assistant" ? (
                     <>
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                      <AvatarImage src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTz5uMnIudmvgyCgU7-dociht4oBz1sklU_U3F7H2L7JHsXAYcQzAhJjT2deJAzdVcM2Ig&usqp=CAU" />
                       <AvatarFallback>AI</AvatarFallback>
                     </>
                   ) : (
                     <>
+                      <AvatarImage src="https://github.com/shadcn.png" />
                       <AvatarFallback>You</AvatarFallback>
                     </>
                   )}
