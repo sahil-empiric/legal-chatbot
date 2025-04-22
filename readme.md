@@ -191,7 +191,8 @@ EXECUTE PROCEDURE public.embed_content_function(content, embedding, 5);
 ```sql
 create or replace function public.match_document_sections(
   embedding vector(384),
-  match_threshold float
+  match_threshold float,
+  case_id bigint
 )
 returns setof document_sections
 language plpgsql
@@ -199,10 +200,12 @@ as $$
 #variable_conflict use_variable
 begin
   return query
-  select *
-  from document_sections
-  where document_sections.embedding <#> embedding < -match_threshold
-	order by document_sections.embedding <#> embedding;
+  select ds.*
+  from document_sections ds
+  join documents d on d.id = ds.document_id
+  where (d.file_type = 'kb' or d.case_id = case_id)
+    and ds.embedding <#> embedding < -match_threshold
+  order by ds.embedding <#> embedding;
 end;
 $$;
 ```
