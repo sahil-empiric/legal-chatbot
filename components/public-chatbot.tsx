@@ -115,18 +115,14 @@ export default function PublicChatbot() {
     try {
       // Search for relevant documents
       const searchResults = await searchDocuments(userMessage)
-      console.log("🚀 ~ handleSubmit ~ searchResults:", searchResults)
-
       // Build context from search results
       let context = ""
       if (searchResults && searchResults.length > 0) {
         context = searchResults.map(r => `From ${r.filename}: ${r.content}`).join("\n\n")
-        console.log("🚀 ~ handleSubmit ~ context:", context)
       } else {
         const { data: files } = await supabase.storage.from("files").list()
         const fileNames = files?.map(file => file.name).join(", ") || "No files available"
         context = `No relevant documents found. Available files: ${fileNames}`
-        console.log("🚀 ~ handleSubmit ~ context:", context)
       }
 
       // Prepare messages for chat API
@@ -135,8 +131,6 @@ export default function PublicChatbot() {
         ...messages.slice(1).filter(msg => msg.role !== "system"), // Previous conversation
         { role: "user", content: `Context:\n${context}\n\nQuestion: ${userMessage}` }
       ]
-      console.log("🚀 ~ handleSubmit ~ chatMessages:", chatMessages)
-
       // Generate AI response
       const completionResponse = await mistralAPI.post("/chat/completions", {
         model: "mistral-small",
@@ -144,8 +138,6 @@ export default function PublicChatbot() {
         max_tokens: 512,
         temperature: 0.2,
       })
-      console.log("🚀 ~ handleSubmit ~ completionResponse:", completionResponse)
-
       const answer = completionResponse.data.choices[0]?.message?.content || "No answer generated."
 
       // Add AI response to chat

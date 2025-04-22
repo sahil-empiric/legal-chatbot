@@ -8,6 +8,7 @@ import { createBrowserClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { useAuth } from "@/hooks/useAuth"
 
 // Initialize Supabase client
 const supabase = createBrowserClient();
@@ -17,27 +18,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession()
-
-        if (error || !data.session) {
-          router.push("/login")
-          return
-        }
-
-        setLoading(false)
-      } catch (error) {
-        router.push("/login")
-      }
-    }
-
-    checkSession()
-  }, [router])
+  const { session, isLoading: loading } = useAuth();
+  console.log('session', session)
 
   if (loading) {
     return (

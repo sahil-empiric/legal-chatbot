@@ -191,11 +191,7 @@ export default function FilesPage() {
       const fileName = `kb/${Date.now()}-${selectedFile.name}`;
       const { data, error } = await supabase.storage
         .from("files")
-        .upload(fileName, selectedFile, {
-          metadata: {
-            case_id: 1,
-          }
-        });
+        .upload(fileName, selectedFile);
 
       if (error) throw error;
 
@@ -329,7 +325,7 @@ export default function FilesPage() {
 
       // 3️⃣ Remove from your document_vectors table
       const { error: vectorError } = await supabase
-        .from("document_vectors")
+        .from("documents")
         .delete()
         .eq("filename", objectPath);                 // ← match full path
       if (vectorError) console.error("Vector delete error:", vectorError);
