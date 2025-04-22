@@ -34,7 +34,7 @@ CREATE TABLE public.documents (
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
 -- Attach policy
-alter policy "open to public" on "public"."documents" to public using (true) with check (true);
+create policy "open to public" on "public"."documents" to public using (true) with check (true);
 ```
 
 ### Create a function to insert new documents
@@ -50,27 +50,39 @@ BEGIN
     -- 1. Extract the first segment of NEW.name and decide the file_type
     IF split_part(NEW.name, '/', 1) = 'kb' THEN
         file_type := 'kb'::file_type_enum;
+
+        -- 2. Insert into documents without case_id
+        INSERT INTO public.documents (
+            file_reference,
+            file_type
+        )
+        VALUES (
+            NEW.id,
+            file_type
+        ) 
+        returning id into document_id;
+
     ELSE
         file_type := 'user_kb'::file_type_enum;
+
+        -- 2. Get the metadata from the NEW object
+        file_metadata := NEW.user_metadata;
+        -- 2.1. Insert into documents with case_id
+        INSERT INTO public.documents (
+            case_id,
+            file_reference,
+            file_type
+        )
+        VALUES (
+            (file_metadata ->> 'case_id')::bigint,
+            NEW.id,
+            file_type
+        ) 
+        returning id into document_id;
+
     END IF;
 
-    -- 2. Get the metadata from the NEW object
-    file_metadata := NEW.metadata;
-
-    -- 3. Insert into documents using the computed file_type
-    INSERT INTO public.documents (
-        case_id,
-        file_reference,
-        file_type
-    )
-    VALUES (
-        (file_metadata ->> 'case_id')::bigint,
-        NEW.id,
-        file_type
-    ) 
-    returning id into document_id;
-
-    -- 4. Process Documents
+    -- 3. Process Documents
     select
         net.http_post(
             -- url := supabase_url() || '/functions/v1/processDocuments',
