@@ -83,7 +83,7 @@ Deno.serve(async (req)=>{
     }
     
     console.log(
-      `Saved ${pdfText?.formattedChunks.length} sections for file '${document.name}'`
+      `Saved ${pdfText?.formattedChunks.length} sections for file '${document.storage_object_path}'`
     );
   }
 

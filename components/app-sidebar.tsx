@@ -14,18 +14,15 @@ import { useAuth } from "@/hooks/useAuth";
 const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Files", href: "/dashboard/files", icon: FileText },
+    { name: "Case", href: "/dashboard/case", icon: PcCase },
     { name: "Tools", href: "/dashboard/files", icon: Wrench },
     { name: "workflow", href: "/dashboard/files", icon: Network },
     { name: "admin", href: "/dashboard/files", icon: User2Icon },
     { name: "API", href: "/dashboard/files", icon: FileText },
-    { name: "Case", href: "/dashboard/case", icon: PcCase },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 const supabase = createBrowserClient();
-
-
-
 
 export function AppSidebar() {
     const router = useRouter();
@@ -59,8 +56,8 @@ export function AppSidebar() {
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
-                    {!!session?.user && navItems.map(item => (
-                        <Link key={item.href} href={item.href}>
+                    {!!session?.user && navItems.map((item, index) => (
+                        <Link key={index} href={item.href}>
                             <Button variant="ghost" className="w-full justify-start">
                                 <item.icon className="mr-2 h-4 w-4" />
                                 {item.name}

@@ -222,6 +222,7 @@ const CaseManagement = () => {
                                                 key={caseItem.id}
                                                 href={`/dashboard/case/${caseItem.id}`}
                                                 passHref
+                                                className="underline"
                                             >
                                                 {caseItem.title}
                                             </Link>

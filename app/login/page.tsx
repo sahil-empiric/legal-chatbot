@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { toast } from 'sonner';
 import Link from "next/link";
 
 const formSchema = z.object({
@@ -37,7 +38,11 @@ const Login = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    await signIn(values.email, values.password);
+    try {
+      await signIn(values.email, values.password);
+    } catch (error: any) {
+      toast.error(`${error?.message || "Log in failed"}! Please try again`);
+    }
   };
 
   return (

@@ -19,8 +19,15 @@ Deno.serve(async (req) => {
         return new Response('ok', { headers: corsHeaders });
     }
 
-    const { query } = await req.json();
+    const { query, caseId } = await req.json();
     if (!query) {
+        return new Response(JSON.stringify({ error: "query is required" }), {
+            status: 500,
+            headers: corsHeaders,
+        });
+    }
+
+    if (!caseId) {
         return new Response(JSON.stringify({ error: "query is required" }), {
             status: 500,
             headers: corsHeaders,
@@ -39,6 +46,7 @@ Deno.serve(async (req) => {
     const { data: documents, error: matchError } = await supabase.rpc('match_document_sections', {
         embedding,
         match_threshold: 0.8,
+        case_id: caseId || -1
     })
         .select('content, document_id')
         .limit(5);

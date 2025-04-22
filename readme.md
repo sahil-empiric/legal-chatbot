@@ -15,6 +15,11 @@ CREATE TABLE public.cases (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 ) WITH (OIDS=FALSE);
 
+ALTER TABLE public.cases ENABLE ROW LEVEL SECURITY;
+
+-- Attach policy
+create policy "open to public" on "public"."cases" to public using (true) with check (true);
+
 -- Create an index on the created_by column for better performance on joins
 CREATE INDEX idx_cases_created_by ON public.cases(created_by);
 ```
@@ -25,7 +30,7 @@ CREATE TYPE file_type_enum AS ENUM ('kb', 'user_kb');
 
 CREATE TABLE public.documents (
     id bigint primary key generated always as identity,
-    case_id BIGINT not null references public.cases (id) ON DELETE CASCADE,
+    case_id BIGINT references public.cases (id) ON DELETE CASCADE,
     file_reference uuid not null references storage.objects (id) ON DELETE CASCADE,
     file_type file_type_enum default 'user_kb' NOT NULL,
     created_at timestamp with time zone DEFAULT now()
@@ -53,12 +58,12 @@ BEGIN
 
         -- 2. Insert into documents without case_id
         INSERT INTO public.documents (
-            file_reference,
-            file_type
+          file_reference,
+          file_type
         )
         VALUES (
-            NEW.id,
-            file_type
+          NEW.id,
+          file_type
         ) 
         returning id into document_id;
 
@@ -66,7 +71,7 @@ BEGIN
         file_type := 'user_kb'::file_type_enum;
 
         -- 2. Get the metadata from the NEW object
-        file_metadata := NEW.user_metadata;
+        file_metadata := NEW.metadata;
         -- 2.1. Insert into documents with case_id
         INSERT INTO public.documents (
             case_id,
@@ -118,6 +123,11 @@ as
   from documents
   join storage.objects
     on storage.objects.id = documents.file_reference;
+
+ALTER TABLE public.documents_with_storage_path ENABLE ROW LEVEL SECURITY;
+
+-- Attach policy
+create policy "open to public" on "public"."documents_with_storage_path" as PERMISSIVE for ALL to public using (true) with check (true);
 ```
 
 
@@ -135,6 +145,8 @@ create table document_sections (
   content text not null,
   embedding vector (384)
 );
+
+ALTER TABLE public.document_sections ENABLE ROW LEVEL SECURITY;
 
 -- Attach policy
 create policy "open to public" on "public"."document_sections" as PERMISSIVE for ALL to public using (true) with check (true);
