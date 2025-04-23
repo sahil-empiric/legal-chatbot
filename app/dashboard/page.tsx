@@ -2,9 +2,11 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/hooks/useAuth"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { FileIcon, UploadIcon, UsersIcon } from "lucide-react"
 import { useEffect, useState } from "react"
+import CaseManagement from "./case/page"
 
 // Initialize Supabase client
 const supabase = createBrowserClient();
@@ -16,6 +18,15 @@ export default function DashboardPage() {
     recentUploads: 0,
   })
   const [userName, setUserName] = useState("")
+
+  const [userRole, setUserRole] = useState<string>("user");
+  const { session, isLoading: loading } = useAuth();
+
+  useEffect(() => {
+    if (session?.user) {
+      setUserRole(session.user.user_metadata.role);
+    }
+  }, [session]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -62,95 +73,99 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back, {userName}</p>
-      </div>
+      {userRole === "user" ? <CaseManagement /> :
+        <>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back, {userName}</p>
+          </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Files</CardTitle>
-            <FileIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalFiles}</div>
-            <p className="text-xs text-muted-foreground">{formatBytes(stats.totalStorage)} used</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Uploads</CardTitle>
-            <UploadIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.recentUploads}</div>
-            <p className="text-xs text-muted-foreground">In the last 7 days</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
-            <UsersIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-muted-foreground">Current active session</p>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Files</CardTitle>
+                <FileIcon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalFiles}</div>
+                <p className="text-xs text-muted-foreground">{formatBytes(stats.totalStorage)} used</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Recent Uploads</CardTitle>
+                <UploadIcon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.recentUploads}</div>
+                <p className="text-xs text-muted-foreground">In the last 7 days</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+                <UsersIcon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">1</div>
+                <p className="text-xs text-muted-foreground">Current active session</p>
+              </CardContent>
+            </Card>
+          </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common tasks you can perform from the dashboard</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-base">Upload Files</CardTitle>
+          <Tabs defaultValue="overview">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>Common tasks you can perform from the dashboard</CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <p className="text-sm text-muted-foreground">Upload new files to your storage</p>
+                <CardContent className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-base">Upload Files</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <p className="text-sm text-muted-foreground">Upload new files to your storage</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-base">Manage Files</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <p className="text-sm text-muted-foreground">View and manage your uploaded files</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-base">Account Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <p className="text-sm text-muted-foreground">Update your account preferences</p>
+                    </CardContent>
+                  </Card>
                 </CardContent>
               </Card>
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-base">Manage Files</CardTitle>
+            </TabsContent>
+            <TabsContent value="analytics" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Usage Analytics</CardTitle>
+                  <CardDescription>View your storage and usage statistics</CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <p className="text-sm text-muted-foreground">View and manage your uploaded files</p>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <p className="text-muted-foreground">Analytics dashboard coming soon</p>
                 </CardContent>
               </Card>
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-base">Account Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <p className="text-sm text-muted-foreground">Update your account preferences</p>
-                </CardContent>
-              </Card>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Usage Analytics</CardTitle>
-              <CardDescription>View your storage and usage statistics</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px] flex items-center justify-center">
-              <p className="text-muted-foreground">Analytics dashboard coming soon</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+          </Tabs>
+        </>
+      }
     </div>
   )
 }

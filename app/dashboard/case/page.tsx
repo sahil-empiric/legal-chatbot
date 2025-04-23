@@ -164,7 +164,7 @@ const CaseManagement = () => {
         }
     }, [session]);
     return (
-        <div className="container mx-auto py-8 px-4">
+        <div className="container mx-auto">
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
