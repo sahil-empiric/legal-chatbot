@@ -62,11 +62,10 @@ Extracted content from both sources
 Legal reasoning grounded in UK or applicable jurisdictional law
 Cite all sources from the documents used.
 Structure your reply with:
-Query Breakdown
-Documents Used
-Response
-Next Steps or Legal Risks
-Remind the user this is not formal legal advice and they should consult a solicitor if needed.`,
+- Query Breakdown
+- Documents Used
+- Response
+- Next Steps or Legal Risks`,
 };
 
 export default function CaseFileUploader() {
