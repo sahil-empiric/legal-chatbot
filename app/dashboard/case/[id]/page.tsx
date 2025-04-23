@@ -123,7 +123,8 @@ export default function CaseFileUploader() {
     const [files, setFiles] = useState<FileObject[]>([]);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [chatLoading, setChatLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [fileToDelete, setFileToDelete] = useState<string | null>(null);
@@ -243,6 +244,7 @@ export default function CaseFileUploader() {
         setMessages((prev) => [...prev, { role: "user", content: userMessage }])
 
         setLoading(true)
+        setChatLoading(true)
 
         try {
             // Search for relevant documents
@@ -296,6 +298,7 @@ export default function CaseFileUploader() {
             ])
         } finally {
             setLoading(false)
+            setChatLoading(false)
         }
     }
 
@@ -335,7 +338,7 @@ export default function CaseFileUploader() {
                         <Card>
                             <CardHeader><CardTitle>Files</CardTitle></CardHeader>
                             <CardContent className="p-0">
-                                {uploading ? (
+                                {loading ? (
                                     <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin h-6 w-6" /></div>
                                 ) : files.length === 0 ? (
                                     <div className="h-40 flex flex-col items-center justify-center text-center">
@@ -392,11 +395,11 @@ export default function CaseFileUploader() {
                                         </div>
                                     ))
                                 )}
-                                {loading && (
+                                {chatLoading && (
                                     <div className="flex justify-start">
                                         <div className="flex items-center space-x-2 bg-muted p-3 rounded-lg">
                                             <Bot className="h-5 w-5" />
-                                            <Ellipsis className="h-4 w-4 animate-spin" />
+                                            <Loader2 className="h-4 w-4 animate-spin" />
                                             <span>Thinking...</span>
                                         </div>
                                     </div>

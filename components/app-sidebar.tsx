@@ -55,9 +55,10 @@ export function AppSidebar() {
     return (
         <Sidebar>
             <SidebarHeader>
-                <h2 className="text-xl font-bold flex gap-2 justify-center items-center">
+                <h2 className="text-xl font-bold flex gap-2 items-center">
                     <img src="/logo.svg" alt="" /> Verilex AI
                 </h2>
+                {/* <h2 className="text-xl font-bold mt-3 text-center">{!!session?.user && userRole === "user" ? "User" : "Admin"} Dashboard</h2> */}
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
