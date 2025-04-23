@@ -335,7 +335,7 @@ export default function CaseFileUploader() {
                         <Card>
                             <CardHeader><CardTitle>Files</CardTitle></CardHeader>
                             <CardContent className="p-0">
-                                {loading ? (
+                                {uploading ? (
                                     <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin h-6 w-6" /></div>
                                 ) : files.length === 0 ? (
                                     <div className="h-40 flex flex-col items-center justify-center text-center">
