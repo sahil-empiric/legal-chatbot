@@ -90,6 +90,9 @@ interface ChatMessage {
   content: string;
 }
 
+// Maximum file size in bytes (5 MB)
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
 // Utility function to throttle batch processing
 const processBatch = async (
   items: any[],
@@ -127,6 +130,8 @@ export default function FilesPage() {
     role: "system",
     content: "You are an expert assistant. Use the provided context to answer the user's question as accurately as possible. Format your responses using Markdown."
   }]);
+
+  const [fileSizeError, setFileSizeError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFiles();
@@ -176,8 +181,16 @@ export default function FilesPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
+    setFileSizeError(null);
+    if (e.target.files?.length) {
+      const file = e.target.files[0];
+      if (file.size > MAX_FILE_SIZE) {
+        setFileSizeError("File size exceeds the maximum limit of 5 MB");
+        setSelectedFile(null);
+        e.target.value = ''; // Reset the input
+        return;
+      }
+      setSelectedFile(file);
     }
   };
 
@@ -473,6 +486,12 @@ export default function FilesPage() {
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {fileSizeError && (
+              <Alert variant="destructive">
+                <AlertDescription>{fileSizeError}</AlertDescription>
               </Alert>
             )}
 
