@@ -135,7 +135,7 @@ export default function PublicChatbot() {
       const completionResponse = await mistralAPI.post("/chat/completions", {
         model: "mistral-large-latest",
         messages: chatMessages,
-        max_tokens: 1000,
+        max_tokens: 5000,
         temperature: 0.2,
       })
       console.log("🚀 ~ handleSubmit ~ completionResponse:", completionResponse)

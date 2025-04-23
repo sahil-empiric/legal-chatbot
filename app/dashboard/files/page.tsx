@@ -395,7 +395,7 @@ export default function FilesPage() {
         const completionResponse = await mistralAPI.post("/chat/completions", {
           model: "mistral-large-latest",
           messages,
-          max_tokens: 1000,
+          max_tokens: 5000,
           temperature: 0.2,
         });
 
