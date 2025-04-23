@@ -11,6 +11,8 @@ import { Bot, Download, FileIcon, Loader2, Send, Trash2, Upload, User } from "lu
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useParams } from "next/navigation";
 import axios from "axios";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -380,7 +382,33 @@ export default function CaseFileUploader() {
                             ) : (
                                 <User className="h-5 w-5 mt-1 flex-shrink-0" />
                             )}
-                            <div className="whitespace-pre-wrap">{message.content}</div>
+                            <div className="">
+                                <Markdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                        p: ({ node, ...props }) => <p className="mb-4 text-[14px]" {...props} />,
+                                        strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                                        em: ({ node, ...props }) => <em className="italic" {...props} />,
+                                        h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-4 mt-6" {...props} />,
+                                        h2: ({ node, ...props }) => <h2 className="text-xl font-bold mb-3 mt-5" {...props} />,
+                                        h3: ({ node, ...props }) => <h3 className="text-lg font-bold mb-2 mt-4" {...props} />,
+                                        a: ({ node, ...props }) => <a className="text-blue-500 hover:underline" {...props} />,
+                                        code: ({ node, ...props }) => (
+                                            <code className="bg-gray-800 text-green-300 px-1 py-0.5 rounded text-xs" {...props} />
+                                        ),
+                                        pre: ({ node, ...props }) => <pre className="bg-gray-800 p-4 rounded mb-4 overflow-auto" {...props} />,
+                                        li: ({ node, ...props }) => <li className="ml-4 list-disc text-[14px] mb-1" {...props} />,
+                                        ul: ({ node, ...props }) => <ul className="pl-4 mb-4" {...props} />,
+                                        ol: ({ node, ...props }) => <ol className="pl-4 mb-4 list-decimal" {...props} />,
+                                        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-500 pl-4 italic my-4" {...props} />,
+                                        table: ({ node, ...props }) => <table className="border-collapse table-auto w-full mb-4" {...props} />,
+                                        th: ({ node, ...props }) => <th className="border px-4 py-2 text-left bg-gray-700" {...props} />,
+                                        td: ({ node, ...props }) => <td className="border px-4 py-2" {...props} />
+                                    }}
+                                >
+                                    {message.content}
+                                </Markdown>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -463,6 +491,7 @@ export default function CaseFileUploader() {
                             <div className="p-4 border-t">
                                 <form onSubmit={handleSubmit} className="flex gap-2">
                                     <Input
+                                        autoFocus
                                         placeholder="Type your message..."
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
