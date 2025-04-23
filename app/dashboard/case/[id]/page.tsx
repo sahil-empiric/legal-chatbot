@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { createBrowserClient } from "@/lib/supabase/client";
-import { Bot, Download, FileIcon, Loader2, Send, SendIcon, Trash2, Upload, User } from "lucide-react";
+import { Bot, Download, Ellipsis, FileIcon, Loader2, Send, SendIcon, Trash2, Upload, User } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useParams } from "next/navigation";
 import axios from "axios";
@@ -15,6 +15,9 @@ import axios from "axios";
 // Initialize Supabase client
 const supabase = createBrowserClient();
 const mistralApiKey = process.env.NEXT_PUBLIC_MISTRAL_API_KEY!
+
+// Maximum file size in bytes (5 MB)
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 interface FileObject {
     id: string;
@@ -125,6 +128,7 @@ export default function CaseFileUploader() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [fileToDelete, setFileToDelete] = useState<string | null>(null);
     const [input, setInput] = useState<string>("");
+    const [fileSizeError, setFileSizeError] = useState<string | null>(null);
 
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -164,7 +168,17 @@ export default function CaseFileUploader() {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files?.length) setSelectedFile(e.target.files[0]);
+        setFileSizeError(null);
+        if (e.target.files?.length) {
+            const file = e.target.files[0];
+            if (file.size > MAX_FILE_SIZE) {
+                setFileSizeError("File size exceeds the maximum limit of 5 MB");
+                setSelectedFile(null);
+                e.target.value = ''; // Reset the input
+                return;
+            }
+            setSelectedFile(file);
+        }
     };
 
     const uploadFile = async () => {
@@ -197,17 +211,10 @@ export default function CaseFileUploader() {
 
         try {
             const path = `user_kb/${caseId}/${fileToDelete}`;
-            console.log(`Attempting to delete file at path: ${path}`);
-
             const { error } = await supabase.storage.from("files").remove([path]);
-            if (error) {
-                console.error("Error deleting file:", error);
-                throw error;
-            }
-
+            if (error) throw error;
             setFiles(files.filter(f => f.name !== fileToDelete));
         } catch (err: any) {
-            console.error("Delete operation failed:", err);
             setError(err.message || "Delete failed");
         } finally {
             setDeleteDialogOpen(false);
@@ -239,13 +246,25 @@ export default function CaseFileUploader() {
 
         try {
             // Search for relevant documents
-            const searchResults = await searchDocuments(userMessage)
+            const searchResults = await axios.post(
+                "https://dhvvdsnipzvahdienvsm.supabase.co/functions/v1/queryEmbed",
+                {
+                    query: userMessage,
+                    caseId: caseId
+                },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
             // Build context from search results
             let context = ""
-            if (searchResults && searchResults.length > 0) {
-                context = searchResults.map(r => `From ${r.filename}: ${r.content}`).join("\n\n")
+            if (searchResults.data && searchResults.data.length > 0) {
+                context = searchResults.data.map((r: SearchResult) => `From ${r.filename}: ${r.content}`).join("\n\n")
             } else {
-                const { data: files } = await supabase.storage.from("files").list()
+                const { data: files } = await supabase.storage.from("files").list(`user_kb/${caseId}`);
                 const fileNames = files?.map(file => file.name).join(", ") || "No files available"
                 context = `No relevant documents found. Available files: ${fileNames}`
             }
@@ -261,16 +280,15 @@ export default function CaseFileUploader() {
             const completionResponse = await mistralAPI.post("/chat/completions", {
                 model: "mistral-large-latest",
                 messages: chatMessages,
-                max_tokens: 2000,
+                max_tokens: 1000,
                 temperature: 0.2,
             })
-            console.log("🚀 ~ handleSubmit ~ completionResponse:", completionResponse)
+
             const answer = completionResponse.data.choices[0]?.message?.content || "No answer generated."
 
             // Add AI response to chat
             setMessages((prev) => [...prev, { role: "assistant", content: answer }])
         } catch (error: any) {
-            console.error("Error generating response:", error)
             setError(error.message || "Failed to generate response")
             setMessages((prev) => [
                 ...prev,
@@ -278,29 +296,6 @@ export default function CaseFileUploader() {
             ])
         } finally {
             setLoading(false)
-        }
-    }
-
-    const searchDocuments = async (query: string) => {
-        try {
-            // Get embedding for search query
-            const embeddingResponse = await axios.post(
-                "https://dhvvdsnipzvahdienvsm.supabase.co/functions/v1/queryEmbed",
-                {
-                    query: query,
-                    caseId: caseId
-                },
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-
-            return embeddingResponse.data as SearchResult[]
-        } catch (error: any) {
-            console.error("Search error:", error)
-            throw error
         }
     }
 
@@ -326,6 +321,11 @@ export default function CaseFileUploader() {
                                     <Button onClick={uploadFile} disabled={!selectedFile || uploading}>
                                         {uploading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Upload className="mr-2 h-4 w-4" />}Upload
                                     </Button>
+                                    {fileSizeError && (
+                                        <Alert variant="destructive">
+                                            <AlertDescription>{fileSizeError}</AlertDescription>
+                                        </Alert>
+                                    )}
                                 </div>
                                 {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
                             </CardContent>
@@ -396,7 +396,7 @@ export default function CaseFileUploader() {
                                     <div className="flex justify-start">
                                         <div className="flex items-center space-x-2 bg-muted p-3 rounded-lg">
                                             <Bot className="h-5 w-5" />
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <Ellipsis className="h-4 w-4 animate-spin" />
                                             <span>Thinking...</span>
                                         </div>
                                     </div>
@@ -434,6 +434,3 @@ export default function CaseFileUploader() {
         </div>
     );
 }
-
-
-
