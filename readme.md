@@ -71,7 +71,7 @@ BEGIN
         file_type := 'user_kb'::file_type_enum;
 
         -- 2. Get the metadata from the NEW object
-        file_metadata := NEW.metadata;
+        file_metadata := NEW.user_metadata;
         -- 2.1. Insert into documents with case_id
         INSERT INTO public.documents (
             case_id,
@@ -212,11 +212,16 @@ as $$
 #variable_conflict use_variable
 begin
   return query
+  -- select ds.*
+  -- from document_sections ds
+  -- join documents d on d.id = ds.document_id
+  -- where (d.file_type = 'kb' or d.case_id = case_id)
+  --   and ds.embedding <#> embedding < -match_threshold
+  -- order by ds.embedding <#> embedding;
   select ds.*
-  from document_sections ds
-  join documents d on d.id = ds.document_id
-  where (d.file_type = 'kb' or d.case_id = case_id)
-    and ds.embedding <#> embedding < -match_threshold
+  from document_sections as ds
+  where ds.document_id IN (SELECT id FROM documents as d WHERE (d.file_type = 'kb' AND d.case_id = null) OR (d.file_type = 'user_kb' AND d.case_id = case_id))
+  and ds.embedding <#> embedding < -match_threshold
   order by ds.embedding <#> embedding;
 end;
 $$;

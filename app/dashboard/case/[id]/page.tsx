@@ -48,7 +48,7 @@ const mistralAPI = axios.create({
 
 const systemPrompt = {
     role: "system",
-content: `You are a legal AI assistant specialising in comprehensive legal analysis for the UK legal system. Provide detailed, well-structured analysis incorporating legal principles, case law, and practical implications. Always use British English spelling. When citing cases, use proper citation format and explain their relevance clearly.
+    content: `You are a legal AI assistant specialising in comprehensive legal analysis for the UK legal system. Provide detailed, well-structured analysis incorporating legal principles, case law, and practical implications. Always use British English spelling. When citing cases, use proper citation format and explain their relevance clearly.
 Based on the following case details, analyse the charges and statutes:
 Please extract and analyse:
 1. Exact offence(s) charged
@@ -256,13 +256,15 @@ export default function CaseFileUploader() {
                 ...messages.slice(1).filter(msg => msg.role !== "system"), // Previous conversation
                 { role: "user", content: `Context:\n${context}\n\nQuestion: ${userMessage}` }
             ]
+
             // Generate AI response
             const completionResponse = await mistralAPI.post("/chat/completions", {
-                model: "mistral-small",
+                model: "mistral-large-latest",
                 messages: chatMessages,
-                max_tokens: 512,
+                max_tokens: 2000,
                 temperature: 0.2,
             })
+            console.log("🚀 ~ handleSubmit ~ completionResponse:", completionResponse)
             const answer = completionResponse.data.choices[0]?.message?.content || "No answer generated."
 
             // Add AI response to chat

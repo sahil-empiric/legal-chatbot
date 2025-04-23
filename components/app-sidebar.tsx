@@ -15,10 +15,10 @@ const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Files", href: "/dashboard/files", icon: FileText },
     { name: "Case", href: "/dashboard/case", icon: PcCase },
-    { name: "Tools", href: "/dashboard/files", icon: Wrench },
-    { name: "workflow", href: "/dashboard/files", icon: Network },
-    { name: "admin", href: "/dashboard/files", icon: User2Icon },
-    { name: "API", href: "/dashboard/files", icon: FileText },
+    { name: "Tools", href: "#", icon: Wrench },
+    { name: "Workflow", href: "#", icon: Network },
+    { name: "Admin", href: "#", icon: User2Icon },
+    { name: "API", href: "#", icon: FileText },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
@@ -27,7 +27,7 @@ const supabase = createBrowserClient();
 export function AppSidebar() {
     const router = useRouter();
     const { session, isLoading: loading } = useAuth();
-    const [userRole, setUserRole] = useState<string>("");
+    const [userRole, setUserRole] = useState<string>("user");
 
     useEffect(() => {
         if (session?.user) {
@@ -35,28 +35,34 @@ export function AppSidebar() {
         }
     }, [session]);
 
-    // Define which links each role can see :contentReference[oaicite:7]{index=7}
-    const allowedForUser = ["Case", "Settings"];
-    const allowedByDefault = ["Dashboard", "Files", "Tools", "workflow", "API", "Settings"];
+    // Define allowed nav items per role
+    const allowedForUser = ["Tools", "Workflow", "Case", "Settings"];
+    // const filteredNav = userRole === "user"
+    //     ? navItems.filter(item => allowedForUser.includes(item.name))
+    //     : userRole === "admin"
+    //         ? navItems.filter(item => item.name !== "Case")
+    //         : navItems;
+
     const filteredNav = userRole === "user"
         ? navItems.filter(item => allowedForUser.includes(item.name))
-        : navItems.filter(item => allowedByDefault.includes(item.name));
+        : navItems.filter(item => item.name !== "Case");
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut(); // Supabase sign‑out :contentReference[oaicite:8]{index=8}
-        router.push("/");              // optional redirect
+        await supabase.auth.signOut();
+        router.push("/");
     };
 
     return (
         <Sidebar>
             <SidebarHeader>
-                <h2 className="text-xl font-bold flex gap">
+                <h2 className="text-xl font-bold flex gap-2 justify-center items-center">
                     <img src="/logo.svg" alt="" /> Verilex AI
                 </h2>
+                <h2 className="text-xl font-bold mt-3 text-center">{!!session?.user && userRole === "user" ? "User" : "Admin"} Dashboard</h2>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
-                    {!!session?.user && navItems.map((item, index) => (
+                    {!!session?.user && filteredNav.map((item, index) => (
                         <Link key={index} href={item.href}>
                             <Button variant="ghost" className="w-full justify-start">
                                 <item.icon className="mr-2 h-4 w-4" />

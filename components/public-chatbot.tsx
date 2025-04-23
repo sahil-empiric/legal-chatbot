@@ -133,11 +133,12 @@ export default function PublicChatbot() {
       ]
       // Generate AI response
       const completionResponse = await mistralAPI.post("/chat/completions", {
-        model: "mistral-small",
+        model: "mistral-large-latest",
         messages: chatMessages,
-        max_tokens: 512,
+        max_tokens: 2000,
         temperature: 0.2,
       })
+      console.log("🚀 ~ handleSubmit ~ completionResponse:", completionResponse)
       const answer = completionResponse.data.choices[0]?.message?.content || "No answer generated."
 
       // Add AI response to chat

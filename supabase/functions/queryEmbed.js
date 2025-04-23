@@ -46,10 +46,10 @@ Deno.serve(async (req) => {
     const { data: documents, error: matchError } = await supabase.rpc('match_document_sections', {
         embedding,
         match_threshold: 0.8,
-        case_id: caseId || -1
+        case_id: caseId || 999
     })
         .select('content, document_id')
-        .limit(5);
+        .limit(10);
 
     if (matchError) {
         console.error(matchError);
