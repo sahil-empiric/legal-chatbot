@@ -135,17 +135,23 @@ export default function CaseFileUploader() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFileSizeError(null);
 
-        if (e.target.files?.length) {
-            const file = e.target.files[0];
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-            if (file.size > MAX_FILE_SIZE) {
-                setFileSizeError("File size exceeds the maximum limit of 5 MB");
-                setSelectedFile(null);
-                return;
-            }
-
-            setSelectedFile(file);
+        // Validate file type (PDF only)
+        if (file.type !== 'application/pdf') {
+            setFileSizeError('Only PDF files are allowed');
+            setSelectedFile(null);
+            return;
         }
+
+        // Validate file size (max 5 MB)
+        if (file.size > MAX_FILE_SIZE) {
+            setFileSizeError('File size exceeds the maximum limit of 5 MB');
+            setSelectedFile(null);
+            return;
+        }
+        setSelectedFile(file);
     };
 
     // Upload file to storage
@@ -190,7 +196,6 @@ export default function CaseFileUploader() {
         try {
             const path = `user_kb/${caseId}/${fileToDelete}`;
             const { error } = await supabase.storage.from("files").remove([path]);
-
             if (error) throw error;
 
             setFiles((prevFiles) => prevFiles.filter((f) => f.name !== fileToDelete));
@@ -442,6 +447,7 @@ export default function CaseFileUploader() {
                                         type="file"
                                         ref={fileInputRef}
                                         onChange={handleFileChange}
+                                        accept=".pdf"
                                     />
                                     <Button
                                         onClick={uploadFile}
