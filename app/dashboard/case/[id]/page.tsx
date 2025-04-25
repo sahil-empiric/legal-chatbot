@@ -13,6 +13,7 @@ import { useParams } from "next/navigation";
 import axios from "axios";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { generateParaphrases } from "@/hooks/useMistralParaphrase";
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -39,6 +40,8 @@ interface SearchResult {
     filename: string;
     content: string;
     similarity: number;
+    question: string;
+    documents: { content: string }[];
 }
 
 // API client setup
@@ -230,6 +233,9 @@ export default function CaseFileUploader() {
         setInput("");
         setError(null);
 
+        let res = await generateParaphrases(userMessage)
+        console.log("🚀 ~ handleSubmit ~ res:", res)
+
         // Add user message to chat
         setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
         setChatLoading(true);
@@ -239,7 +245,7 @@ export default function CaseFileUploader() {
             const searchResults = await axios.post(
                 "https://dhvvdsnipzvahdienvsm.supabase.co/functions/v1/queryEmbed",
                 {
-                    query: userMessage,
+                    query: res,
                     caseId: caseId,
                 },
                 {
@@ -248,19 +254,21 @@ export default function CaseFileUploader() {
                     },
                 }
             );
+            console.log("🚀 ~ handleSubmit ~ searchResults:", searchResults)
 
             // Build context from search results
             let context = "";
             if (searchResults.data && searchResults.data.length > 0) {
+                context = "Use the following context to answer the question (if needed):\n\n"
                 context = searchResults.data
-                    .map((r: SearchResult) => `From ${r.filename}: ${r.content}`)
+                    .map((r: SearchResult, index: number) => `${(index + 1)}. ${r.question}\n${r.documents.map((doc) => doc.content).join("\n")} \n\n`)
                     .join("\n\n");
             } else {
                 const { data: files } = await supabase.storage
                     .from("files")
-                    .list(`user_kb/${caseId}`);
+                    .list(`user_kb / ${caseId} `);
                 const fileNames = files?.map((file) => file.name).join(", ") || "No files available";
-                context = `No relevant documents found. Available files: ${fileNames}`;
+                context = `No relevant documents found.Available files: ${fileNames} `;
             }
 
             // Prepare messages for chat API

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { signup } from "../login/actions";
 
 const formSchema = z
     .object({
@@ -150,7 +151,7 @@ const Signup = () => {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" className="w-full" disabled={isLoading}>
+                            <Button type="submit" formAction={signup} className="w-full" disabled={isLoading}>
                                 {isLoading ? "Creating account..." : "Create account"}
                             </Button>
                         </form>
