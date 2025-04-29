@@ -148,6 +148,7 @@ export default function FilesPage() {
 
       const { data, error } = await supabase.storage.from("files").list('kb');
       if (error) throw error;
+      console.log("🚀 ~ fetchFiles ~ data:", data)
 
       if (data) {
 
@@ -576,7 +577,7 @@ export default function FilesPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Uploaded At</TableHead>
-                  <TableHead>Status</TableHead>
+                  {/* <TableHead>Status</TableHead> */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -586,13 +587,13 @@ export default function FilesPage() {
                     <TableCell className="font-medium">{file.name}</TableCell>
                     <TableCell>{formatBytes(file.size)}</TableCell>
                     <TableCell>{formatDate(file.created_at)}</TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       {file.vectorized ? (
                         <span className="text-green-600">Vectorized</span>
                       ) : (
                         <span className="text-yellow-600">Pending Vectorization</span>
                       )}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="text-right">
                       <a href={file.url} target="_blank" rel="noopener noreferrer">
                         <Button variant="ghost" size="sm">

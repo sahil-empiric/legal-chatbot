@@ -51,6 +51,7 @@ const mistralAPI = axios.create({
         "Content-Type": "application/json",
         Authorization: `Bearer ${mistralApiKey}`,
     },
+    responseType: 'stream',
 });
 
 // System prompt for the legal assistant
@@ -233,12 +234,12 @@ export default function CaseFileUploader() {
         setInput("");
         setError(null);
 
-        let res = await generateParaphrases(userMessage)
-        console.log("🚀 ~ handleSubmit ~ res:", res)
-
         // Add user message to chat
         setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
         setChatLoading(true);
+
+        let res = [userMessage, ...await generateParaphrases(userMessage)];
+
 
         try {
             // Search for relevant documents
@@ -254,12 +255,11 @@ export default function CaseFileUploader() {
                     },
                 }
             );
-            console.log("🚀 ~ handleSubmit ~ searchResults:", searchResults)
 
             // Build context from search results
             let context = "";
             if (searchResults.data && searchResults.data.length > 0) {
-                context = "Use the following context to answer the question (if needed):\n\n"
+                context = "Use the following context to answer the question (if needed):\n\n";
                 context = searchResults.data
                     .map((r: SearchResult, index: number) => `${(index + 1)}. ${r.question}\n${r.documents.map((doc) => doc.content).join("\n")} \n\n`)
                     .join("\n\n");
@@ -278,18 +278,68 @@ export default function CaseFileUploader() {
                 { role: "user", content: `Context:\n${context}\n\nQuestion: ${userMessage}` },
             ];
 
-            // Generate AI response
-            const completionResponse = await mistralAPI.post("/chat/completions", {
-                model: "mistral-large-latest",
-                messages: chatMessages,
-                max_tokens: 5000,
-                temperature: 0.2,
+            // // Add empty assistant message that will be updated during streaming
+            // setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+            // setChatLoading(false);
+
+            // Generate AI response with streaming using fetch
+            const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${mistralApiKey}`,
+                },
+                body: JSON.stringify({
+                    model: "mistral-large-latest",
+                    messages: chatMessages,
+                    stream: true,
+                    max_tokens: 5000,
+                    temperature: 0.2,
+                }),
             });
 
-            const answer = completionResponse.data.choices[0]?.message?.content || "No answer generated.";
+            if (!response.body) {
+                throw new Error("ReadableStream not yet supported in this browser.");
+            }
 
-            // Add AI response to chat
-            setMessages((prev) => [...prev, { role: "assistant", content: answer }]);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let answer = "";
+
+            // Add empty assistant message that will be updated during streaming
+            setChatLoading(false);
+            setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+
+                // Split the chunk by newline to handle multiple JSON objects
+                const lines = chunk.split('\n').filter(line => line.trim() !== '');
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const parsedChunk = JSON.parse(line.substring(6));
+                        if (parsedChunk.choices[0].finish_reason) break;
+                        const chunkData = parsedChunk.choices[0].delta?.content || "";
+                        if (chunkData === "[DONE]") break;
+
+                        // Append the chunk to the answer
+                        answer += chunkData;
+
+                        // Update just the last message (assistant's response)
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1] = {
+                                role: "assistant",
+                                content: answer
+                            };
+                            return newMessages;
+                        });
+                    }
+                }
+            }
+
         } catch (err: any) {
             setError(err.message || "Failed to generate response");
             setMessages((prev) => [

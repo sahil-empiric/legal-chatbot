@@ -7,6 +7,7 @@ export async function middleware(request: NextRequest) {
 
     // Get the user's authentication status
     const { data: { user } } = await supabase.auth.getUser()
+    const userRole = user?.user_metadata?.role
 
     const path = request.nextUrl.pathname
 
@@ -18,7 +19,7 @@ export async function middleware(request: NextRequest) {
 
     // If there's an auth cookie present and user is on a public route, redirect to home
     if (hasAuthCookie && publicRoutes.includes(path)) {
-        return NextResponse.redirect(new URL('/', request.url))
+        return NextResponse.redirect(new URL(`${userRole === 'user' ? '/dashboard/case' : '/dashboard'}`, request.url))
     }
 
     // If the user is not authenticated and trying to access a restricted route
@@ -30,7 +31,7 @@ export async function middleware(request: NextRequest) {
     // If the user is authenticated and trying to access a public route
     if (user && publicRoutes.includes(path)) {
         // Redirect to the home page
-        return NextResponse.redirect(new URL('/', request.url))
+        return NextResponse.redirect(new URL(`${userRole === 'user' ? '/dashboard/case' : '/dashboard'}`, request.url))
     }
 
     // Otherwise, proceed with the request
