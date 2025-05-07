@@ -322,7 +322,7 @@ export default function CaseFileUploader() {
                         const parsedChunk = JSON.parse(line.substring(6));
                         if (parsedChunk.choices[0].finish_reason) break;
                         const chunkData = parsedChunk.choices[0].delta?.content || "";
-                        if (chunkData === "[DONE]") break;
+                        if (chunkData === "[DONE]" || chunkData.includes("[DONE]")) break;
 
                         // Append the chunk to the answer
                         answer += chunkData;
