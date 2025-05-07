@@ -293,7 +293,7 @@ export default function CaseFileUploader() {
                     model: "mistral-large-latest",
                     messages: chatMessages,
                     stream: true,
-                    max_tokens: 5000,
+                    max_tokens: 10000,
                     temperature: 0.2,
                 }),
             });
