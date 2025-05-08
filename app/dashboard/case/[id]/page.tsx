@@ -7,18 +7,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { createBrowserClient } from "@/lib/supabase/client";
-import { Bot, Download, FileIcon, Loader2, Send, Trash2, Upload, User } from "lucide-react";
+import { Bot, Download, FileIcon, Loader2, Send, Settings, Trash2, Upload, User } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useParams } from "next/navigation";
 import axios from "axios";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+// We'll implement generateParaphrases inside this component
+import { Textarea } from "@/components/ui/textarea";
 import { generateParaphrases } from "@/hooks/useMistralParaphrase";
 
 // Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const supabase = createBrowserClient();
-const mistralApiKey = process.env.NEXT_PUBLIC_MISTRAL_API_KEY!;
+const mistralApiKey = process.env.NEXT_PUBLIC_MISTRAL_API_KEY;
+
+if (!mistralApiKey) {
+    throw new Error("Mistral API key is not defined in environment variables.");
+}
+
+// Default system prompt
+const DEFAULT_SYSTEM_PROMPT = `You are a legal assistant AI. When a user submits a legal query:
+Break the query down into key sub-questions.
+Search both:
+Documents uploaded by the admin (legal textbooks, policies, precedents)
+Documents uploaded by the user (case files, contracts, evidence)
+Retrieve relevant content using embeddings or vector search.
+Draft a response using:
+Extracted content from both sources
+Legal reasoning grounded in UK or applicable jurisdictional law
+Cite all sources from the documents used.
+Structure your reply with:
+- Query Breakdown
+- Documents Used
+- Response
+- Next Steps or Legal Risks`;
 
 // Type definitions
 interface FileObject {
@@ -44,6 +67,10 @@ interface SearchResult {
     documents: { content: string }[];
 }
 
+interface ParaphrasingConfig {
+    systemPrompt?: string;
+}
+
 // API client setup
 const mistralAPI = axios.create({
     baseURL: "https://api.mistral.ai/v1",
@@ -53,26 +80,6 @@ const mistralAPI = axios.create({
     },
     responseType: 'stream',
 });
-
-// System prompt for the legal assistant
-const systemPrompt = {
-    role: "system",
-    content: `You are a legal assistant AI. When a user submits a legal query:
-Break the query down into key sub-questions.
-Search both:
-Documents uploaded by the admin (legal textbooks, policies, precedents)
-Documents uploaded by the user (case files, contracts, evidence)
-Retrieve relevant content using embeddings or vector search.
-Draft a response using:
-Extracted content from both sources
-Legal reasoning grounded in UK or applicable jurisdictional law
-Cite all sources from the documents used.
-Structure your reply with:
-- Query Breakdown
-- Documents Used
-- Response
-- Next Steps or Legal Risks`,
-};
 
 export default function CaseFileUploader() {
     const { id: caseId } = useParams<{ id: string }>();
@@ -90,6 +97,10 @@ export default function CaseFileUploader() {
     const [fileToDelete, setFileToDelete] = useState<string | null>(null);
     const [input, setInput] = useState<string>("");
     const [fileSizeError, setFileSizeError] = useState<string | null>(null);
+    const [customPrompt, setCustomPrompt] = useState<string>(DEFAULT_SYSTEM_PROMPT);
+    const [promptDialogOpen, setPromptDialogOpen] = useState(false);
+    const [paraphrasingPrompt, setParaphrasingPrompt] = useState<string>("");
+    const [paraphrasingDialogOpen, setParaphrasingDialogOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
         {
             role: "assistant",
@@ -224,6 +235,39 @@ export default function CaseFileUploader() {
         return new Date(dateString).toLocaleString();
     };
 
+    // Dialog management for system and paraphrasing prompts
+    const openPromptDialog = () => {
+        setPromptDialogOpen(true);
+    };
+
+    const openParaphrasingDialog = () => {
+        setParaphrasingDialogOpen(true);
+    };
+
+    // Save custom system prompt
+    const saveCustomPrompt = () => {
+        setPromptDialogOpen(false);
+        // If the prompt is empty, use the default
+        if (!customPrompt.trim()) {
+            setCustomPrompt(DEFAULT_SYSTEM_PROMPT);
+        }
+    };
+
+    // Save paraphrasing prompt
+    const saveParaphrasingPrompt = () => {
+        setParaphrasingDialogOpen(false);
+    };
+
+    // Reset system prompt to default
+    const resetPrompt = () => {
+        setCustomPrompt(DEFAULT_SYSTEM_PROMPT);
+    };
+
+    // Reset paraphrasing prompt to default (empty means use dynamic context)
+    const resetParaphrasingPrompt = () => {
+        setParaphrasingPrompt("");
+    };
+
     // Handle message submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -238,8 +282,8 @@ export default function CaseFileUploader() {
         setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
         setChatLoading(true);
 
-        let res = [userMessage, ...await generateParaphrases(userMessage)];
-
+        // Generate paraphrases based on available file knowledge
+        let res = [userMessage, ...await generateParaphrases(userMessage, caseId, paraphrasingPrompt)];
 
         try {
             // Search for relevant documents
@@ -268,8 +312,14 @@ export default function CaseFileUploader() {
                     .from("files")
                     .list(`user_kb / ${caseId} `);
                 const fileNames = files?.map((file) => file.name).join(", ") || "No files available";
-                context = `No relevant documents found.Available files: ${fileNames} `;
+                context = `No relevant documents found. Available files: ${fileNames} `;
             }
+
+            // Use the custom prompt if available, otherwise use the default
+            const systemPrompt = {
+                role: "system",
+                content: customPrompt || DEFAULT_SYSTEM_PROMPT,
+            };
 
             // Prepare messages for chat API
             const chatMessages = [
@@ -277,10 +327,6 @@ export default function CaseFileUploader() {
                 ...messages.slice(1).filter((msg) => msg.role !== "system"),
                 { role: "user", content: `Context:\n${context}\n\nQuestion: ${userMessage}` },
             ];
-
-            // // Add empty assistant message that will be updated during streaming
-            // setMessages(prev => [...prev, { role: "assistant", content: "" }]);
-            // setChatLoading(false);
 
             // Generate AI response with streaming using fetch
             const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -533,12 +579,37 @@ export default function CaseFileUploader() {
                         </Card>
 
                         {/* Files List Card */}
-                        <Card>
+                        <Card className="mb-5">
                             <CardHeader>
                                 <CardTitle>Files</CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <FilesList />
+                            </CardContent>
+                        </Card>
+
+                        {/* System Prompt Settings Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Assistant Settings</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <Button
+                                    onClick={openPromptDialog}
+                                    variant="outline"
+                                    className="w-full"
+                                >
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    Customize System Prompt
+                                </Button>
+                                <Button
+                                    onClick={openParaphrasingDialog}
+                                    variant="outline"
+                                    className="w-full"
+                                >
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    Customize Paraphrasing
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>
@@ -575,6 +646,7 @@ export default function CaseFileUploader() {
                 </div>
             </div>
 
+            {/* Delete File Dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogContent className="sm:max-w-[400px]">
                     <DialogHeader>
@@ -587,6 +659,62 @@ export default function CaseFileUploader() {
                         </Button>
                         <Button variant="destructive" onClick={deleteFile}>
                             Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* System Prompt Dialog */}
+            <Dialog open={promptDialogOpen} onOpenChange={setPromptDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Customize System Prompt</DialogTitle>
+                        <DialogDescription>
+                            Define how the AI assistant should behave and respond. Leave blank to use the default prompt.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea
+                            value={customPrompt}
+                            onChange={(e) => setCustomPrompt(e.target.value)}
+                            placeholder="Enter your custom system prompt here..."
+                            className="h-64"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={resetPrompt}>
+                            Reset to Default
+                        </Button>
+                        <Button onClick={saveCustomPrompt}>
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Paraphrasing Prompt Dialog */}
+            <Dialog open={paraphrasingDialogOpen} onOpenChange={setParaphrasingDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Customize Paraphrasing Prompt</DialogTitle>
+                        <DialogDescription>
+                            Define how the AI should generate alternative questions. Leave blank to use a dynamic prompt that automatically includes file names.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea
+                            value={paraphrasingPrompt}
+                            onChange={(e) => setParaphrasingPrompt(e.target.value)}
+                            placeholder="Enter your custom paraphrasing prompt here..."
+                            className="h-64"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={resetParaphrasingPrompt}>
+                            Reset to Default
+                        </Button>
+                        <Button onClick={saveParaphrasingPrompt}>
+                            Save Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>
