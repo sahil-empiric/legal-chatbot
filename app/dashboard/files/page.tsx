@@ -32,7 +32,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from "sonner";
@@ -80,10 +80,6 @@ interface FileObject {
 interface ExtractedPdfData {
   pages: string[];
   metadata: any;
-}
-interface ChatMessage {
-  role: string;
-  content: string;
 }
 
 // Maximum file size in bytes (5 MB)
@@ -142,14 +138,14 @@ export default function FilesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
-  const [extractedPdfData, setExtractedPdfData] = useState<ExtractedPdfData | null>(null);
-
   const [ragAnswer, setRagAnswer] = useState<string | null>(null);
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
   const [paraphraseDialogOpen, setParaphraseDialogOpen] = useState(false);
   // State for prompts fetched from Supabase
   const [customPrompt, setCustomPrompt] = useState<string>(DEFAULT_SYSTEM_PROMPT);
   const [paraphrasePrompt, setParaphrasePrompt] = useState<string>(DEFAULT_PARAPHRASE_PROMPT);
+  // Add a ref for the file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fileSizeError, setFileSizeError] = useState<string | null>(null);
 
@@ -341,43 +337,21 @@ export default function FilesPage() {
 
       console.log('upload data', data);
 
+      // Fetch updated file list
+      await fetchFiles();
+
+      // Reset selected file state
+      setSelectedFile(null);
+
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
     } catch (error: any) {
       setError(error.message || "Failed to upload file");
     } finally {
       setUploading(false);
-    }
-  };
-
-  const storeEmbeddingsInSupabase = async (
-    embeddings: number[],
-    text: string,
-    fileName: string,
-    chunkIndex: number
-  ) => {
-    try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        throw new Error("Authentication required: " + (userError?.message || "User not found"));
-      }
-
-      const { error: vectorError } = await supabase
-        .from("document_vectors")
-        .insert([
-          {
-            filename: fileName,
-            embedding: embeddings,
-            chunk_index: chunkIndex,
-            user_id: user.id,
-            content: text,
-          },
-        ]);
-
-      if (vectorError) {
-        throw vectorError;
-      }
-    } catch (error: any) {
-      throw new Error(`Failed to store embeddings: ${error.message}`);
     }
   };
 
@@ -452,6 +426,7 @@ export default function FilesPage() {
                 <Input
                   id="file-upload"
                   type="file"
+                  ref={fileInputRef}
                   onChange={handleFileChange}
                   className="mt-1"
                 />
