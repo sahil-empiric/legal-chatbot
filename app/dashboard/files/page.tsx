@@ -21,7 +21,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { useParaphraseGenerator } from "@/hooks/useMistralParaphrase";
 import { createBrowserClient } from "@/lib/supabase/client";
 import axios from "axios";
 import {

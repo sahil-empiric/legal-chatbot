@@ -6,8 +6,6 @@ import type React from "react"
 
 import { createBrowserClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
 import { useAuth } from "@/hooks/useAuth"
 
 // Initialize Supabase client

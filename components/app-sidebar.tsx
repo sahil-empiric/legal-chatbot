@@ -7,9 +7,10 @@ import { createBrowserClient } from "@/lib/supabase/client";
 import { FileText, LayoutDashboard, LogOut, Network, PcCase, Settings, User2Icon, Wrench } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "./ui/button";
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
